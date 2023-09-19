@@ -1,0 +1,20 @@
+{
+  "name": "contour-map",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^4.4.5"
+  },
+  "dependencies": {
+    "fast-png": "^6.2.0",
+    "maplibre-contour": "^0.0.3",
+    "maplibre-gl": "^3.3.1",
+    "maplibre-gl-gsi-terrain": "^0.0.2"
+  }
+}

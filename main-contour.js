@@ -8,7 +8,6 @@ import mlcontour from "maplibre-contour";
 //import maplibre-gl-gsi-terrain
 import { useGsiTerrainSource } from 'maplibre-gl-gsi-terrain';
 
-
 const map = new maplibregl.Map({
   container: 'map', // div要素のid
   zoom: 8, // 初期表示のズーム
@@ -26,8 +25,6 @@ const map = new maplibregl.Map({
           maxzoom: 18,
           tileSize: 256,
           attribution:
-          '<a href="https://maptiler.jp/" target="_blank">&copy; MIERUNE</a>',
-          '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>':
           '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
         },
      },
@@ -44,12 +41,67 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
-  const gsiTerrainSource = useGsiTerrainSource(maplibregl.addProtocol);
-  map.addSource('terrain', gsiTerrainSource);
+  /* //https://qiita.com/Kanahiro/items/1e9c1a4ad6be76b27f0f
+  const gsidem2terrainrgb = (r, g, b) => {
+    let height = r * 655.36 + g * 2.56 + b * 0.01;
+    if (r === 128 && g === 0 && b === 0) {
+        height = 0;
+    } else if (r >= 128) {
+        height -= 167772.16;
+    }
+    height += 100000;
+    height *= 10;
+    const tB = (height / 256 - Math.floor(height / 256)) * 256;
+    const tG =
+        (Math.floor(height / 256) / 256 -
+            Math.floor(Math.floor(height / 256) / 256)) *
+        256;
+    const tR =
+        (Math.floor(Math.floor(height / 256) / 256) / 256 -
+            Math.floor(Math.floor(Math.floor(height / 256) / 256) / 256)) *
+        256;
+    return [tR, tG, tB];
+  };
+
+  maplibregl.addProtocol('gsidem', (params, callback) => {
+    const image = new Image();
+    image.crossOrigin = '';
+    image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0);
+        const imageData = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+        );
+        for (let i = 0; i < imageData.data.length / 4; i++) {
+            const tRGB = gsidem2terrainrgb(
+                imageData.data[i * 4],
+                imageData.data[i * 4 + 1],
+                imageData.data[i * 4 + 2],
+            );
+            imageData.data[i * 4] = tRGB[0];
+            imageData.data[i * 4 + 1] = tRGB[1];
+            imageData.data[i * 4 + 2] = tRGB[2];
+        }
+        context.putImageData(imageData, 0, 0);
+        canvas.toBlob((blob) =>
+            blob.arrayBuffer().then((arr) => callback(null, arr, null, null)),
+        );
+    };
+    image.src = params.url.replace('gsidem://', '');
+    return { cancel: () => {} };
+  }); */
+
   var demSource = new mlcontour.DemSource({
-    url: "https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=WALjHeMMwhydAZbblglR",
+    url: 'https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png',
     encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
-    maxzoom: 14,
+    maxzoom: 17,
     worker: true, // offload isoline computation to a web worker to reduce jank
     cacheSize: 100, // number of most-recent tiles to cache
     timeoutMs: 10_000, // timeout on fetch requests
@@ -62,16 +114,20 @@ map.on('load', () => {
       demSource.contourProtocolUrl({
         thresholds: {
           11: [100, 1000],
-          12: [50, 500],
-          13: [10, 50],
-          14: [2.5, 10],
+          12: [100, 1000],
+          13: [25, 100],
+          14: [25, 100],
+          15: [10, 50],
+          16: [10, 50],
+          17: [10, 50],
         },
       
       }),
     ],
-    maxzoom: 15,
+    maxzoom: 17,
   });
 
+  //contour
   map.addLayer(
     {
       id: "contour-lines",
@@ -85,5 +141,26 @@ map.on('load', () => {
       },
     },
   );
+
+  //label
+  map.addLayer({
+    id: "contour-labels",
+    type: "symbol",
+    source: "contour-source",
+    "source-layer": "contours",
+    filter: [">", ["get", "level"], 0],
+    layout: {
+      "symbol-placement": "line",
+      "text-size": 10,
+      "text-field": ["concat", ["number-format", ["get", "ele"], {}], "'"],
+      "text-font": ['Noto Sans Bold'],
+    },
+    paint: {
+      "text-halo-color": "white",
+      "text-halo-width": 1,
+    },
+  });
 });
+
+
 

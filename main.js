@@ -8,6 +8,7 @@ import mlcontour from "maplibre-contour";
 //import maplibre-gl-gsi-terrain
 import { useGsiTerrainSource } from 'maplibre-gl-gsi-terrain';
 
+
 const map = new maplibregl.Map({
   container: 'map', // div要素のid
   zoom: 8, // 初期表示のズーム
@@ -42,74 +43,76 @@ const map = new maplibregl.Map({
     }
 });
 
-//add contour
 map.on('load', () => {
-  //add demSource
-  //contour実際のやつ
-  var demSource = new mlcontour.DemSource({
-    url: "https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=IP9CYAWJVLGwdbFbpPVD",
-    encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
-    maxzoom: 14,
-    worker: true, // offload isoline computation to a web worker to reduce jank
-    //cacheSize: 100, // number of most-recent tiles to cache
-    //timeoutMs: 10_000, // timeout on fetch requests
-  });
-  demSource.setupMaplibre(maplibregl);
+var demSource = useGsiTerrainSource(maplibreGl.addProtocol);
+map.addSource('terrain', demSource);
 
-  //var gsiTerrainSource = useGsiTerrainSource(maplibregl.addProtocol);
+// 陰影図追加
+map.addLayer(
+  {
+      id: 'hillshade',
+      source: 'terrain', // type=raster-demのsourceを指定
+      type: 'hillshade', // 陰影図レイヤー
+      paint: {
+          'hillshade-illumination-anchor': 'map', // 陰影の方向の基準
+          'hillshade-exaggeration': 0.2, // 陰影の強さ
+      },
+  },
+  'osm-layer', 
+);
 
-  map.addSource("contour-source", {
-    type: "vector",
-    tiles: [
-      demSource.contourProtocolUrl({
-        // convert meters to feet, default=1 for meters
-        //multiplier: 3.28084,
-        thresholds: {
-          // zoom: [minor, major]
-          11: [200, 1000],
-          12: [100, 500],
-          14: [50, 200],
-          15: [20, 100],
-        },
-        // optional, override vector tile parameters:
-        contourLayer: "contours",
-        elevationKey: "ele",
-        levelKey: "level",
-        //extent: 4096,
-        //buffer: 1,
-        overzoom: 1,
-      }),
-    ],
-    maxzoom: 15,
-  });
+// 3D地形
+map.addControl(
+  new maplibregl.TerrainControl({
+      source: 'terrain', // type="raster-dem"のsourceのID
+      exaggeration: 1, // 標高を強調する倍率
+  }),
+);
+});
 
-  map.addLayer({
-    id: "contour-lines",
-    type: "line",
-    source: "contour-source",
-    "source-layer": "contours",
-    paint: {
-      "line-color": "rgba(0,0,0, 100%)",
-      // level = highest index in thresholds array the elevation is a multiple of
-      "line-width": ["match", ["get", "level"], 1, 1, 0.5],
-    },
-  });
-  map.addLayer({
-    id: "contour-labels",
-    type: "symbol",
-    source: "contour-source",
-    "source-layer": "contours",
-    filter: [">", ["get", "level"], 0],
-    layout: {
-      "symbol-placement": "line",
-      "text-size": 10,
-      "text-field": ["concat", ["number-format", ["get", "ele"], {}], "'"],
-      "text-font": ["Noto Sans Bold"],
-    },
-    paint: {
-      "text-halo-color": "white",
-      "text-halo-width": 1,
-    },
-  });
+map.addSource("contour-souce", {
+  type: "vector",
+  tiles: [
+    demSource.contourProtocolUrl({
+      thresholds: {
+        11: [200, 1000],
+        12: [100, 500],
+        14: [50, 200],
+        15: [20, 100],
+      },
+     
+    }),
+  ],
+  maxzoom: 15,
+});
 
-})
+map.addLayer({
+  id: "contour-lines",
+  type: "line",
+  source: "contour-source",
+  "source-layer": "contours",
+  paint: {
+    "line-color": "rgba(0,0,0, 50%)",
+    // level = highest index in thresholds array the elevation is a multiple of
+    "line-width": ["match", ["get", "level"], 1, 1, 0.5],
+  },
+});
+
+map.addLayer({
+  id: "contour-labels",
+  type: "symbol",
+  source: "contour-source",
+  "source-layer": "contours",
+  filter: [">", ["get", "level"], 0],
+  layout: {
+    "symbol-placement": "line",
+    "text-size": 10,
+    "text-field": ["concat", ["number-format", ["get", "ele"], {}], "'"],
+    "text-font": ["Noto Sans Bold"],
+  },
+  paint: {
+    "text-halo-color": "white",
+    "text-halo-width": 1,
+  },
+});
+

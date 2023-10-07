@@ -113,3 +113,35 @@ demSourceも
 
 maptilerのterrain-rgb使ったら、一部のみ表示された。なんで？
 
+05.10.2023
+久しぶりに手を動かす。途中で止めるの良くないんだよな。本当は。
+demsourceのURLを取得できればよい。のだが、
+
+戦略として、useGsiTerrainSourceのURLを取得して、それで新たにraster-dem作成するということも？
+でも正直やってることは同じ気がするんだよな。
+useGsiTerrainSourceはraster    
+    return {
+        type: 'raster-dem',
+        tiles: [
+            'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
+        ],
+        tileSize: 256,
+        minzoom: options.minzoom ?? 1,
+        maxzoom: options.maxzoom ?? 14,
+        attribution:
+            options.attribution ??
+            '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>',
+    };
+を返してる。
+
+maplibre-contourは最初
+var demSource = new mlcontour.DemSource({
+  url: "https://url/of/dem/source/{z}/{x}/{y}.png",
+  encoding: "terrarium", // "mapbox" or "terrarium" default="terrarium"
+  maxzoom: 13,
+  worker: true, // offload isoline computation to a web worker to reduce jank
+  cacheSize: 100, // number of most-recent tiles to cache
+  timeoutMs: 10_000, // timeout on fetch requests
+});
+demSource.setupMaplibre(maplibregl);
+を作ってる。

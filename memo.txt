@@ -1,147 +1,46 @@
-19.09.2023
-create htmlv1
-
-問題は、
-var demSource = new mlcontour.DemSource({
-  url: "https://url/of/dem/source/{z}/{x}/{y}.png",
-  encoding: "terrarium", // "mapbox" or "terrarium" default="terrarium"
-  maxzoom: 13,
-  worker: true, // offload isoline computation to a web worker to reduce jank
-  cacheSize: 100, // number of most-recent tiles to cache
-  timeoutMs: 10_000, // timeout on fetch requests
+map.addSource("contour-souce", {
+  type: "vector",
+  tiles: [
+    demSource.contourProtocolUrl({
+      thresholds: {
+        11: [200, 1000],
+        12: [100, 500],
+        14: [50, 200],
+        15: [20, 100],
+      },
+     
+    }),
+  ],
+  maxzoom: 15,
 });
-demSource.setupMaplibre(maplibregl);
-のところがterrain-RGBじゃないので、面倒。どうすればよいんだ?
 
-とりあえずgsi-terrainの生コードをインポートしてみる。
-と思ったけどtypeスクリプトでダメ。chatgptに聞いてみた
-
-function gsidem2terrainrgb(r, g, b) {
-    let rgb = (r << 16) + (g << 8) + b;
-    let h = 0;
-    if (rgb < 0x800000) h = rgb * 0.01;
-    else if (rgb > 0x800000) h = (rgb - Math.pow(2, 24)) * 0.01;
-    rgb = Math.floor((h + 10000) / 0.1);
-    const tR = (rgb & 0xff0000) >> 16;
-    const tG = (rgb & 0x00ff00) >> 8;
-    const tB = rgb & 0x0000ff;
-    return [tR, tG, tB];
-}
-
-function useGsiTerrainSource(addProtocol, options = {}) {
-    addProtocol('gsidem', (params, callback) => {
-        const image = new Image();
-        image.crossOrigin = '';
-        image.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = image.width;
-            canvas.height = image.height;
-
-            const context = canvas.getContext('2d', {
-                willReadFrequently: true,
-            });
-            context.drawImage(image, 0, 0);
-            const imageData = context.getImageData(
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-            for (let i = 0; i < imageData.data.length / 4; i++) {
-                const tRGB = gsidem2terrainrgb(
-                    imageData.data[i * 4],
-                    imageData.data[i * 4 + 1],
-                    imageData.data[i * 4 + 2]
-                );
-                imageData.data[i * 4] = tRGB[0];
-                imageData.data[i * 4 + 1] = tRGB[1];
-                imageData.data[i * 4 + 2] = tRGB[2];
-            }
-            const png = encode(imageData);
-            callback(null, png, null, null);
-        };
-        image.src = params.url.replace('gsidem://', '');
-        return {
-            cancel: () => {
-                image.src = '';
-            },
-        };
-    });
-
-    return {
-        type: 'raster-dem',
-        tiles: [
-            'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
-        ],
-        tileSize: 256,
-        minzoom: options.minzoom || 1,
-        maxzoom: options.maxzoom || 14,
-        attribution:
-            options.attribution ||
-            '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>',
-    };
-}
-
-ということで、useGsiTerrainSourceはraster-demを返している。
-
-contour-
-はdemSourceとしてterrainRGBかterrariumをセットしている。←でもこれもraster-demだぞ。
-これを取得して、ベクタの"contour-source"として読み込んでる。
-
-useGsiTerrainSourceはraster-dem,
-つまり、terrainRGBとして取得後ベクタに変換するか、それともterrain-demから等高線を引くしかない。
-
-return {
-        type: 'raster-dem',
-        tiles: [
-            'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
-        ],
-        tileSize: 256,
-        minzoom: options.minzoom ?? 1,
-        maxzoom: options.maxzoom ?? 14,
-        attribution:
-            options.attribution ??
-            '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>',
-    };
-という形で完成されている。
-でも
-demSourceも
-ほぼ同じな可能性あるよな。encoding: "mapbox"が入ってるか入ってないかの違い？
-じゃあ、足りてない情報を足せば良い？
-
-どーやんの？
-
-maptilerのterrain-rgb使ったら、一部のみ表示された。なんで？
-
-05.10.2023
-久しぶりに手を動かす。途中で止めるの良くないんだよな。本当は。
-demsourceのURLを取得できればよい。のだが、
-
-戦略として、useGsiTerrainSourceのURLを取得して、それで新たにraster-dem作成するということも？
-でも正直やってることは同じ気がするんだよな。
-useGsiTerrainSourceはraster    
-    return {
-        type: 'raster-dem',
-        tiles: [
-            'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
-        ],
-        tileSize: 256,
-        minzoom: options.minzoom ?? 1,
-        maxzoom: options.maxzoom ?? 14,
-        attribution:
-            options.attribution ??
-            '<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>',
-    };
-を返してる。
-
-maplibre-contourは最初
-var demSource = new mlcontour.DemSource({
-  url: "https://url/of/dem/source/{z}/{x}/{y}.png",
-  encoding: "terrarium", // "mapbox" or "terrarium" default="terrarium"
-  maxzoom: 13,
-  worker: true, // offload isoline computation to a web worker to reduce jank
-  cacheSize: 100, // number of most-recent tiles to cache
-  timeoutMs: 10_000, // timeout on fetch requests
+map.addLayer({
+  id: "contour-lines",
+  type: "line",
+  source: "contour-source",
+  "source-layer": "contours",
+  paint: {
+    "line-color": "rgba(0,0,0, 50%)",
+    // level = highest index in thresholds array the elevation is a multiple of
+    "line-width": ["match", ["get", "level"], 1, 1, 0.5],
+  },
 });
-demSource.setupMaplibre(maplibregl);
-を作ってる。
+
+map.addLayer({
+  id: "contour-labels",
+  type: "symbol",
+  source: "contour-source",
+  "source-layer": "contours",
+  filter: [">", ["get", "level"], 0],
+  layout: {
+    "symbol-placement": "line",
+    "text-size": 10,
+    "text-field": ["concat", ["number-format", ["get", "ele"], {}], "'"],
+    "text-font": ["Noto Sans Bold"],
+  },
+  paint: {
+    "text-halo-color": "white",
+    "text-halo-width": 1,
+  },
+});
+

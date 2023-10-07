@@ -1,3 +1,6 @@
+07.10.2023
+buildされたindex.htmlのcssと.jsのパスを、"./~"に変えないとgitpageで表示されない。
+
 map.addSource("contour-souce", {
   type: "vector",
   tiles: [

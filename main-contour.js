@@ -3,10 +3,11 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 //import maplibre-contour
-//import mlcontour from "maplibre-contour";
+import mlcontour from "maplibre-contour";
 
 //import maplibre-gl-gsi-terrain
 import { useGsiTerrainSource } from 'maplibre-gl-gsi-terrain';
+
 
 const map = new maplibregl.Map({
   container: 'map', // div要素のid
@@ -36,41 +37,51 @@ const map = new maplibregl.Map({
           id: 'osm-layer',
           source: 'mierune',
           type: 'raster',
-          paint: {"raster-opacity": 0.7},
+          //paint: {"raster-opacity": 0.5},
         },
       ]
     }
 });
 
 map.on('load', () => {
-const gsiTerrainSource = useGsiTerrainSource(maplibregl.addProtocol);
-map.addSource('terrain', gsiTerrainSource);
+  var demSource = new mlcontour.DemSource({
+    url: "https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=WALjHeMMwhydAZbblglR",
+    encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
+    maxzoom: 14,
+    worker: true, // offload isoline computation to a web worker to reduce jank
+    cacheSize: 100, // number of most-recent tiles to cache
+    timeoutMs: 10_000, // timeout on fetch requests
+  });
+  demSource.setupMaplibre(maplibregl);
 
-// 陰影図追加
-map.addLayer(
-  {
-      id: 'hillshade',
-      source: 'terrain', // type=raster-demのsourceを指定
-      type: 'hillshade', // 陰影図レイヤー
+  map.addSource("contour-source", {
+    type: "vector",
+    tiles: [
+      demSource.contourProtocolUrl({
+        thresholds: {
+          11: [200, 1000],
+          12: [100, 500],
+          14: [50, 200],
+          15: [20, 100],
+        },
+      
+      }),
+    ],
+    maxzoom: 15,
+  });
+
+  map.addLayer(
+    {
+      id: "contour-lines",
+      type: "line",
+      source: "contour-source",
+      "source-layer": "contours",
       paint: {
-          'hillshade-illumination-anchor': 'map', // 陰影の方向の基準
-          'hillshade-exaggeration': 0.2, // 陰影の強さ
+        "line-color": "rgba(0,0,0, 50%)",
+        // level = highest index in thresholds array the elevation is a multiple of
+        "line-width": ["match", ["get", "level"], 1, 1, 0.5],
       },
-  },
-  'osm-layer', 
-);
-
-// 3D地形
-map.addControl(
-  new maplibregl.TerrainControl({
-      source: 'terrain', // type="raster-dem"のsourceのID
-      exaggeration: 1, // 標高を強調する倍率
-  }),
-);
-
+    },
+  );
 });
-
-
-
-
 

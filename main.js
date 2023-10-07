@@ -43,30 +43,30 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
-const gsiTerrainSource = useGsiTerrainSource(maplibregl.addProtocol);
-map.addSource('terrain', gsiTerrainSource);
+  const gsiTerrainSource = useGsiTerrainSource(maplibregl.addProtocol);
+  map.addSource('terrain', gsiTerrainSource);
 
-// 陰影図追加
-map.addLayer(
-  {
-      id: 'hillshade',
-      source: 'terrain', // type=raster-demのsourceを指定
-      type: 'hillshade', // 陰影図レイヤー
-      paint: {
-          'hillshade-illumination-anchor': 'map', // 陰影の方向の基準
-          'hillshade-exaggeration': 0.2, // 陰影の強さ
-      },
-  },
-  'osm-layer', 
-);
+  // 陰影図追加
+  map.addLayer(
+    {
+        id: 'hillshade',
+        source: 'terrain', // type=raster-demのsourceを指定
+        type: 'hillshade', // 陰影図レイヤー
+        paint: {
+            'hillshade-illumination-anchor': 'map', // 陰影の方向の基準
+            'hillshade-exaggeration': 0.2, // 陰影の強さ
+        },
+    },
+    'osm-layer', 
+  );
 
-// 3D地形
-map.addControl(
-  new maplibregl.TerrainControl({
-      source: 'terrain', // type="raster-dem"のsourceのID
-      exaggeration: 1, // 標高を強調する倍率
-  }),
-);
+  // 3D地形
+  map.addControl(
+    new maplibregl.TerrainControl({
+        source: 'terrain', // type="raster-dem"のsourceのID
+        exaggeration: 1, // 標高を強調する倍率
+    }),
+  );
 
 });
 

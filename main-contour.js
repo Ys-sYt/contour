@@ -44,6 +44,8 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
+  const gsiTerrainSource = useGsiTerrainSource(maplibregl.addProtocol);
+  map.addSource('terrain', gsiTerrainSource);
   var demSource = new mlcontour.DemSource({
     url: "https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=WALjHeMMwhydAZbblglR",
     encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
@@ -59,10 +61,10 @@ map.on('load', () => {
     tiles: [
       demSource.contourProtocolUrl({
         thresholds: {
-          11: [200, 1000],
-          12: [100, 500],
-          14: [50, 200],
-          15: [20, 100],
+          11: [100, 1000],
+          12: [50, 500],
+          13: [10, 50],
+          14: [2.5, 10],
         },
       
       }),

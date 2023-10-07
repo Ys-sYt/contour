@@ -1,5 +1,6 @@
 07.10.2023
 buildされたindex.htmlのcssと.jsのパスを、"./~"に変えないとgitpageで表示されない。
+それとassetsの中の.jsファイルもアップロードされない。
 
 map.addSource("contour-souce", {
   type: "vector",

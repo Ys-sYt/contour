@@ -15,6 +15,7 @@
     "fast-png": "^6.2.0",
     "maplibre-contour": "^0.0.3",
     "maplibre-gl": "^3.3.1",
-    "maplibre-gl-gsi-terrain": "^0.0.2"
+    "maplibre-gl-gsi-terrain": "^0.0.2",
+    "maplibre-gl-opacity": "^1.4.0"
   }
 }

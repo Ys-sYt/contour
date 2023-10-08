@@ -2,18 +2,20 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
+/* //opacityControl
+import OpacityControl from 'maplibre-gl-opacity';
+import 'maplibre-gl-opacity/dist/maplibre-gl-opacity.css'; */
+
 //import maplibre-contour
 import mlcontour from "maplibre-contour";
 
-//import maplibre-gl-gsi-terrain
-import { useGsiTerrainSource } from 'maplibre-gl-gsi-terrain';
 
 const map = new maplibregl.Map({
   container: 'map', // div要素のid
   zoom: 8, // 初期表示のズーム
   center: [141.6795, 43.0635], // 初期表示の中心
   minZoom: 6, // 最小ズーム
-  maxZoom: 14, // 最大ズーム
+  maxZoom: 16, // 最大ズーム
   maxBounds: [122, 20, 154, 50], // 表示可能な範囲
   style: {
       version: 8,
@@ -21,83 +23,56 @@ const map = new maplibregl.Map({
       sources: {
         mierune: {
           type: 'raster',
-          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tiles: ['https://api.maptiler.com/maps/jp-mierune-gray/{z}/{x}/{y}.png?key=xeycR1Jqna3Gkrzt6ZBw'],
           maxzoom: 18,
-          tileSize: 256,
+          tileSize: 512,
           attribution:
-          '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+          '<a href="https://maptiler.jp/" target="_blank">&copy; MIERUNE</a> <a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
         },
+        jforest: {
+          type: 'raster',
+          tiles: ['https://api.maptiler.com/tiles/jp-forest/{z}/{x}/{y}.png?key=xeycR1Jqna3Gkrzt6ZBw'],
+          maxzoom: 18,
+          tileSize: 512,
+          attribution:
+          '<a href="https://maptiler.jp/" target="_blank">&copy; MIERUNE</a>',
+        },
+        hillshade: {
+          type: 'raster',
+          tiles: ['https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png'],
+          minzoom: 11,
+          maxzoom: 18,
+          tileSize: 512,
+          attribution:
+          '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">&copy; 地理院タイル</a>',
+        }
      },
       layers: [
-        //背景地図レイヤー
+        //森
         {
-          id: 'osm-layer',
-          source: 'mierune',
+          id: 'jforest',
+          source: 'jforest',
           type: 'raster',
           //paint: {"raster-opacity": 0.5},
+        },
+        //背景地図レイヤー
+        {
+          id: 'basemap',
+          source: 'mierune',
+          type: 'raster',
+          paint: {"raster-opacity": 0.8},
+        },
+        {
+          id: 'hillshade',
+          source: 'hillshade',
+          type: 'raster',
+          paint: {"raster-opacity": 0.2}
         },
       ]
     }
 });
 
 map.on('load', () => {
-  /* //https://qiita.com/Kanahiro/items/1e9c1a4ad6be76b27f0f
-  const gsidem2terrainrgb = (r, g, b) => {
-    let height = r * 655.36 + g * 2.56 + b * 0.01;
-    if (r === 128 && g === 0 && b === 0) {
-        height = 0;
-    } else if (r >= 128) {
-        height -= 167772.16;
-    }
-    height += 100000;
-    height *= 10;
-    const tB = (height / 256 - Math.floor(height / 256)) * 256;
-    const tG =
-        (Math.floor(height / 256) / 256 -
-            Math.floor(Math.floor(height / 256) / 256)) *
-        256;
-    const tR =
-        (Math.floor(Math.floor(height / 256) / 256) / 256 -
-            Math.floor(Math.floor(Math.floor(height / 256) / 256) / 256)) *
-        256;
-    return [tR, tG, tB];
-  };
-
-  maplibregl.addProtocol('gsidem', (params, callback) => {
-    const image = new Image();
-    image.crossOrigin = '';
-    image.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-
-        const context = canvas.getContext('2d');
-        context.drawImage(image, 0, 0);
-        const imageData = context.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height,
-        );
-        for (let i = 0; i < imageData.data.length / 4; i++) {
-            const tRGB = gsidem2terrainrgb(
-                imageData.data[i * 4],
-                imageData.data[i * 4 + 1],
-                imageData.data[i * 4 + 2],
-            );
-            imageData.data[i * 4] = tRGB[0];
-            imageData.data[i * 4 + 1] = tRGB[1];
-            imageData.data[i * 4 + 2] = tRGB[2];
-        }
-        context.putImageData(imageData, 0, 0);
-        canvas.toBlob((blob) =>
-            blob.arrayBuffer().then((arr) => callback(null, arr, null, null)),
-        );
-    };
-    image.src = params.url.replace('gsidem://', '');
-    return { cancel: () => {} };
-  }); */
-
   var demSource = new mlcontour.DemSource({
     url: 'https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png',
     encoding: "mapbox", // "mapbox" or "terrarium" default="terrarium"
@@ -113,15 +88,13 @@ map.on('load', () => {
     tiles: [
       demSource.contourProtocolUrl({
         thresholds: {
-          11: [100, 1000],
+          11: [100, 1000], 
           12: [100, 1000],
-          13: [25, 100],
-          14: [25, 100],
-          15: [10, 50],
-          16: [10, 50],
-          17: [10, 50],
+          13: [100, 1000],
+          14: [100, 1000],
+          15: [25, 100],
+          16: [25, 100],
         },
-      
       }),
     ],
     maxzoom: 17,
@@ -135,12 +108,25 @@ map.on('load', () => {
       source: "contour-source",
       "source-layer": "contours",
       paint: {
-        "line-color": "rgba(0,0,0, 50%)",
+        "line-color": "rgba(0,0,0, 100%)",
         // level = highest index in thresholds array the elevation is a multiple of
         "line-width": ["match", ["get", "level"], 1, 1, 0.5],
       },
     },
+    'basemap',
   );
+
+/*   const opacity = new OpacityControl({
+    baseLayers: {
+      'basemap': '地図',
+      'hillshade': '陰影図',
+    },
+    overLayers: {
+      'contour-lines': '等高線',
+    },
+    OpacityControl: true,
+  });
+  map.addControl(opacity, 'top-right'); */
 
   //label
 /*   map.addLayer({

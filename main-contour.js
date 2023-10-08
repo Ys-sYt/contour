@@ -143,7 +143,7 @@ map.on('load', () => {
   );
 
   //label
-  map.addLayer({
+/*   map.addLayer({
     id: "contour-labels",
     type: "symbol",
     source: "contour-source",
@@ -159,7 +159,7 @@ map.on('load', () => {
       "text-halo-color": "white",
       "text-halo-width": 1,
     },
-  });
+  }); */
 });
 
 

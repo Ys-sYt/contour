@@ -37,9 +37,18 @@ const map = new maplibregl.Map({
           attribution:
           '<a href="https://maptiler.jp/" target="_blank">&copy; MIERUNE</a>',
         },
-        hillshade: {
+        // hillshade: {
+        //   type: 'raster',
+        //   tiles: ['https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png'],
+        //   minzoom: 11,
+        //   maxzoom: 18,
+        //   tileSize: 512,
+        //   attribution:
+        //   '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">&copy; 地理院タイル</a>',
+        // },
+        slope: {
           type: 'raster',
-          tiles: ['https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png'],
+          tiles: ['https://cyberjapandata.gsi.go.jp/xyz/slopemap/{z}/{x}/{y}.png'],
           minzoom: 11,
           maxzoom: 18,
           tileSize: 512,
@@ -62,9 +71,15 @@ const map = new maplibregl.Map({
           type: 'raster',
           paint: {"raster-opacity": 0.8},
         },
+        // {
+        //   id: 'hillshade',
+        //   source: 'hillshade',
+        //   type: 'raster',
+        //   paint: {"raster-opacity": 0.2}
+        // },
         {
-          id: 'hillshade',
-          source: 'hillshade',
+          id: 'slope',
+          source: 'slope',
           type: 'raster',
           paint: {"raster-opacity": 0.2}
         },

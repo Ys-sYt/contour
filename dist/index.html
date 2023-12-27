@@ -3,12 +3,375 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>contour-v0</title>
-      <script type="module" crossorigin src="./assets/index-f6f2b7fb.js"></script>
-      <link rel="stylesheet" href="./assets/index-3d3528f2.css">
+        <title>森林率マップ-v1</title>
+        <style>
+        body {
+          margin: 0;
+        }
+
+        #map {
+          height: 100%;
+          width: 100%;
+        }
+
+        .map-overlay {
+            font: bold 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            position: absolute;
+            width: 200px;
+            bottom: 20px;
+            left: 0px;
+            padding: 10px;
+        }
+
+        .map-overlay .map-overlay-inner {
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .map-overlay label {
+            display: block;
+            margin: 0 0 0px;
+            font-size: 12px;
+            top: 100px;
+            left: 10px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .map-overlay input {
+            background-color: transparent;
+            display: inline-block;
+            width: 100%;
+            position: relative;
+            margin: 0;
+            cursor: ew-resize;
+        }
+
+/*         .maplibregl-popup .maplibregl-popup-content {
+            padding: 8px 10px;
+            font: 12px/14px Arial, Helvetica, sans-serif;
+            color: black;
+            background: white;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            width: 200px;
+            height: 300px;
+            height: auto;
+          overflow: scroll;
+        } */
+
+        th,
+        td {
+            border: solid 1px;
+            /* 枠線指定 */
+        }
+
+        table {
+            font-size: 9pt;
+            /*table-layout: fixed;*/
+            /*width: 300px;*/
+            border-collapse: collapse;
+            /* セルの線を重ねる */
+        }
+
+        .legend {
+            /*background-color: #fff;*/
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 3px;
+            left: 10px;
+/*             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10); */
+            font: 12px/14px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            padding: 10px;
+            position: absolute;
+            top: 70px;
+            z-index: 1;
+            line-height: 20px;
+            height: auto;
+        }
+
+        .legend h4 {
+            margin: 0 0 10px;
+        }
+
+        .legend div span {
+            border-radius: 50%;
+            display: inline-block;
+            height: 15px;
+            margin-right: 10px;
+            width: 15px;
+            color: orangered
+        }
+
+        .square {
+            width: 15px;
+            height: 15px;
+            border: solid 1.5px #000;
+            /*border-radius: 4px;*/
+        }
+
+        #pngtile {
+            padding: 3px 4px;
+            font: 12px/14px Arial, Helvetica, sans-serif;
+            color: black;
+            background: white;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            /*width: fit-content;*/
+            width: 200px;
+            left: 10px;
+            position: absolute;
+            top: 10px;
+            z-index: 1;
+        }
+
+
+        #basemaps {
+            font: 12px/14px Arial, Helvetica, sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 1;
+        }
+
+        </style>
+      <script type="module" crossorigin src="./assets/index-bdd142cd.js"></script>
+      <link rel="stylesheet" href="./assets/index-47f11d7c.css">
     </head>
     <body style="margin: 0">
         <div id="map" style="height: 100vh"></div>
-        
+        <div id="pngtile">
+          <label><b>表示する情報</b></label><br>
+          <select id="basemaps">
+              <option value="ratio_sumf_area" selected>森林率</option>
+              <option value="ratio_n_sumf">森林面積に占める国有林率</option>
+              <option value="ratio_sump_sumf">森林面積に占める民有林率</option>
+              <option value="ratio_p_sumf">森林面積に占める私有林率</option>
+              <option value="ratio_pb_sumf">森林に占める公有林率</option>
+              <option value="ratio_city_sumf">森林面積に占める市町村有林率</option>
+              <option value="ratio_pref_sumf">森林面積に占める都道府県有林率</option>
+              <option value="ratio_zai_sumf">森林面積に占める財産区等率</option>
+              <option value="ratio_p_sump">民有林面積に占める私有林率</option>
+              <option value="ratio_pb_sump">民有林面積に占める公有林率</option>
+              <option value="ratio_pref_sump">民有林面積に占める都道府県有林率</option>
+              <option value="ratio_city_sump">民有林面積に占める市町村有林率</option>
+              <option value="ratio_zai_sump">民有林面積に占める財産区率</option>
+          </select>
+      </div>
+      <div id="legend-ratio_sumf_area" style="display:block;"  class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">85%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">60%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">40%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">25%</span>
+      </div>
+      <div id="legend-ratio_n_sumf" style="display:none;" class='legend' >
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">65%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">40%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">20%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_sump_sumf" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">100%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">75%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">35%</span>
+      </div>
+      <div id="legend-ratio_p_sumf" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">90%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">75%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">20%</span>
+      </div>
+      <div id="legend-ratio_pb_sumf" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">55%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">40%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">20%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_pref_sumf" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">25%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">10%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_city_sumf" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">35%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">20%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">10%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_zai_sumf" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">5%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">3.5%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">1.5%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_p_sump" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">100%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">80%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">30%</span>
+      </div>
+      <div id="legend-ratio_pb_sump" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">25%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">10%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_pref_sump" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">25%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">10%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_city_sump" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">50%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">25%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">10%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      <div id="legend-ratio_zai_sump" style="display:none;" class='legend'>
+        <h4>凡例</h4>
+        <div class="square" style='background-color: rgb(0, 89, 49); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">5%</span><br>
+        <div class="square" style='background-color: rgb(178, 210, 53); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">3.5%</span><br>
+        <div class="square" style='background-color: rgb(206, 230, 193); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">1.5%</span><br>
+        <div class="square" style='background-color: rgb(255, 255, 255); display: inline-block;'>
+        </div><span style="display: inline-block; margin-left: 5px;">0%</span>
+      </div>
+      
+
+<!--       <script type="text/javascript">
+  
+        //レイヤ切り替え
+        let currentLayerName = 'ratio_sumf_area';
+
+        function SelectMap() {
+          // var BaseMapName = document.getElementById('basemaps').value;
+          currentLayerName = document.getElementById('basemaps').value;
+
+          if (map.getLayer('ratio_sumf_area')) map.removeLayer('ratio_sumf_area');
+          if (map.getLayer('ratio_n_sumf')) map.removeLayer('ratio_n_sumf');
+          if (map.getLayer('ratio_sump_sumf')) map.removeLayer('ratio_sump_sumf');
+          if (map.getLayer('ratio_p_sumf')) map.removeLayer('ratio_p_sumf');
+          if (map.getLayer('ratio_pb_sumf')) map.removeLayer('ratio_pb_sumf');
+          if (map.getLayer('ratio_city_sumf')) map.removeLayer('ratio_city_sumf');
+          if (map.getLayer('ratio_pref_sumf')) map.removeLayer('ratio_pref_sumf');
+          if (map.getLayer('ratio_zai_sumf')) map.removeLayer('ratio_zai_sumf');
+          if (map.getLayer('ratio_p_sump')) map.removeLayer('ratio_p_sump');
+          if (map.getLayer('ratio_pb_sump')) map.removeLayer('ratio_pb_sump');
+          if (map.getLayer('ratio_pref_sump')) map.removeLayer('ratio_pref_sump');
+          if (map.getLayer('ratio_city_sump')) map.removeLayer('ratio_city_sump');
+          if (map.getLayer('ratio_zai_sump')) map.removeLayer('ratio_zai_sump');
+          
+          // PNGタイル切り替え
+          map.addLayer({
+              id: currentLayerName,
+              type: "raster",
+              source:'forest_area',
+              minzoom: 4,
+              maxzoom: 6
+          });
+
+
+      
+          // 凡例の表示切り替え
+          var layerIds = [
+            'ratio_sumf_area',
+            'ratio_n_sumf',
+            'ratio_sump_sumf',
+            'ratio_p_sumf',
+            'ratio_pb_sumf',
+            'ratio_city_sumf',
+            'ratio_pref_sumf',
+            'ratio_zai_sumf',
+            'ratio_p_sump',
+            'ratio_pb_sump',
+            'ratio_pref_sump',
+            'ratio_city_sump',
+            'ratio_zai_sump',
+          ];
+
+          for (var j = 0; j < layerIds.length; j++) {
+              // map.setLayoutProperty(layerIds[j], 'visibility', layerIds[j] === BaseMapName ? 'visible' : 'none');
+
+              if (layerIds[j] === currentLayerName) {
+                  // 表示
+                  document.querySelector('#legend-' + layerIds[j]).style.display = 'block';
+              }
+              else {
+                  // 非表示
+                  document.querySelector('#legend-' + layerIds[j]).style.display = 'none';
+              }
+
+          }
+        };
+      
+      </script> -->
     </body>
 </html>

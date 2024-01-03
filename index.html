@@ -240,19 +240,19 @@
                     'type': 'line',
                     'source': 'trace',
                     'paint': {
-                'line-width': 5,
-                // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
-                // to set the line-color to a feature property value.
-                'line-color': [
-                    'interpolate',
-                    ['linear'],
-                    ['get', '_speed'],
-                    0, '#d7191c',
-                    5, '#f79556',
-                    10, '#fdfd57',
-                    15, '#60b856'
-                ]
-            },
+                        'line-width': 5,
+                        // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
+                        // to set the line-color to a feature property value.
+                        'line-color': [
+                            'interpolate',
+                            ['linear'],
+                            ['get', '_speed'],
+                            0, '#d7191c',
+                            5, '#f79556',
+                            10, '#fdfd57',
+                            15, '#60b856'
+                        ]
+                    },
                 });
 
                 // setup the viewport

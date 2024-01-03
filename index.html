@@ -67,7 +67,17 @@
                         })
                     ],
                     maxzoom: 15
-                }
+                },
+                map: {
+                    type: 'image',
+                    url: './map.jpg',
+                    coordinates: [
+                        [139.8276436, 36.7659966],
+                        [139.8499857, 36.7683691],
+                        [139.8520458, 36.7557454],
+                        [139.82969458, 36.75335628],
+                    ],
+                },
             },
             layers: [
                 {
@@ -108,16 +118,54 @@
                         ],
                         'text-font': ['Noto Sans Bold']
                     }
+                },
+                {
+                    id: 'map',
+                    source: 'map',
+                    type: 'raster',
+                    paint: {
+                        'raster-opacity': 0.7,
+                    }
                 }
             ]
         }
     }));
 
+    map.on('load', () => {
+        map.addSource('lines', {
+            'type': 'geojson',
+            'data': './oshimai-gpxsegment.geojson',
+        });
+        map.addLayer({
+            'id': 'lines',
+            'type': 'line',
+            'source': 'lines',
+            'paint': {
+                'line-width': 5,
+                // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
+                // to set the line-color to a feature property value.
+                'line-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', '_speed'],
+                    0, '#d7191c',
+                    5, '#f79556',
+                    10, '#fdfd57',
+                    15, '#60b856'
+                ]
+            },
+            'layout': {
+                'line-cap': 'square',
+            }
+        });
+    });
+
+
     // ズーム・回転
     map.addControl(new maplibregl.NavigationControl());
 
-    // フルスクリーンモードのオンオフ
-    map.addControl(new maplibregl.FullscreenControl());
+/*     // フルスクリーンモードのオンオフ
+    map.addControl(new maplibregl.FullscreenControl()); */
 
     // スケール表示
     map.addControl(new maplibregl.ScaleControl({

@@ -170,6 +170,7 @@
             'type': 'geojson',
             'data': './oshimai-gpxsegment.geojson',
         });
+        //map.getSource
         map.addLayer({
             'id': 'lines',
             'type': 'line',
@@ -190,8 +191,19 @@
             },
             'layout': {
                 'line-cap': 'square',
-            }
+                'visibility': 'none',
+            },
         });
+
+/*     const speedFactor = 30; // number of frames per longitude degree
+    let animation; // to store and cancel the animation
+    let startTime = 0;
+    let progress = 0; // progress = timestamp - startTime
+    let resetTime = false; // indicator of whether time reset is needed for the animation
+    const pauseButton = document.getElementById('pause'); */
+
+
+        
 
         d3.json(
             './oshimai-gpxsegment.geojson',
@@ -199,10 +211,27 @@
                 if (err) throw err;
 
                 // save full coordinate list for later
-                const coordinates = data.features[0].geometry.coordinates;
+                //const coordinates = data.features[0].geometry.coordinates;
+                const coordinates = data.features.map(feature => feature.geometry.coordinates[0]);
+                //const coordinates_1 = data.features[1].geometry.coordinates[0];
+                //const coordinates_2 = data.features.map(feature => feature.geometry.coordinates[0]);
+                //const length = 
+                console.log(coordinates)
+                //console.log(coordinates_1)
+                //console.log(coordinates_2)
+
+/*                 const points = {
+                    'type': 'FeatureCollection',
+                    'features': [
+                        {
+
+                        }
+                    ]
+                } */
 
                 // start by showing just the first coordinate
                 data.features[0].geometry.coordinates = [coordinates[0]];
+                //console.log(data)
 
                 // add it to the map
                 map.addSource('trace', {type: 'geojson', data});
@@ -211,15 +240,24 @@
                     'type': 'line',
                     'source': 'trace',
                     'paint': {
-                        'line-color': 'yellow',
-                        'line-opacity': 0.75,
-                        'line-width': 5
-                    }
+                'line-width': 5,
+                // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
+                // to set the line-color to a feature property value.
+                'line-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', '_speed'],
+                    0, '#d7191c',
+                    5, '#f79556',
+                    10, '#fdfd57',
+                    15, '#60b856'
+                ]
+            },
                 });
 
                 // setup the viewport
-                map.jumpTo({'center': coordinates[0], 'zoom': 14});
-                map.setPitch(30);
+                map.jumpTo({'center': coordinates[0], 'zoom': 17});
+                map.setPitch(0);
 
                 // on a regular basis, add more coordinates from the saved list and update the map
                 let i = 0;
@@ -234,7 +272,7 @@
                     } else {
                         window.clearInterval(timer);
                     }
-                }, 10);
+                }, 100);
             }
         );
 

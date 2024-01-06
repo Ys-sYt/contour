@@ -35,6 +35,15 @@
         .overlay button:hover {
             background-color: #686b6d;
         }
+
+        #pause::after {
+        content: 'Pause';
+        }
+
+        #pause.pause::after {
+        content: 'Play';
+        }
+
     </style>
     <script
     src="https://www.unpkg.com/turf@2.0.0/turf.min.js"
@@ -164,6 +173,8 @@
         }
     }));
 
+    const pauseButton = document.getElementById('pause');
+
 
     map.on('load', () => {
         map.addSource('lines', {
@@ -210,64 +221,96 @@
             (err, data) => {
                 if (err) throw err;
 
-                // save full coordinate list for later
-                //const coordinates = data.features[0].geometry.coordinates;
-                const coordinates = data.features.map(feature => feature.geometry.coordinates[0]);
-                //const coordinates_1 = data.features[1].geometry.coordinates[0];
-                //const coordinates_2 = data.features.map(feature => feature.geometry.coordinates[0]);
-                //const length = 
-                console.log(coordinates)
-                //console.log(coordinates_1)
-                //console.log(coordinates_2)
+                const feature_all = data.features;
+                //console.log(feature_all)
 
-/*                 const points = {
+                //描画用Lineデータ生成
+                const layer_data = {
+                    //'name': data.name,
                     'type': 'FeatureCollection',
-                    'features': [
-                        {
-
-                        }
-                    ]
-                } */
+                    //'crs':  data.crs,
+                    'features':feature_all.slice(0,1),
+                };
+                //console.log(layer_data)
 
                 // start by showing just the first coordinate
-                data.features[0].geometry.coordinates = [coordinates[0]];
-                //console.log(data)
-
+                //data.features[0].geometry.coordinates = [coordinates[0]];
+                
                 // add it to the map
-                map.addSource('trace', {type: 'geojson', data});
-                map.addLayer({
-                    'id': 'trace',
-                    'type': 'line',
-                    'source': 'trace',
-                    'paint': {
-                'line-width': 5,
-                // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
-                // to set the line-color to a feature property value.
-                'line-color': [
-                    'interpolate',
-                    ['linear'],
-                    ['get', '_speed'],
-                    0, '#d7191c',
-                    5, '#f79556',
-                    10, '#fdfd57',
-                    15, '#60b856'
-                ]
-            },
-                });
+                map.addSource(
+                    'trace', {
+                        'type': 'geojson', 
+                        'data': layer_data,
+                    },
+/*                     'point', {
+                        'type': 'geojson',
+                        'data': {
+                            'type': 'Feature',
+                            'geometry': {
+                                'type': 'Point',
+                                'coordinates': layer_data.features[0].geometry.coordinates[0],
+                            },
+                        }
+                    } */
+                );
+                    
+                //console.log(layer_data);
+
+
+                map.addLayer(
+                    {
+                        'id': 'trace',
+                        'type': 'line',
+                        'source': 'trace',
+                        'paint': {
+                            'line-width': 5,
+                            // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
+                            // to set the line-color to a feature property value.
+                            'line-color': //'#000000',
+                            [
+                                'interpolate',
+                                ['linear'],
+                                ['get', '_speed'],
+                                0, '#d7191c',
+                                5, '#f79556',
+                                10, '#fdfd57',
+                                15, '#60b856'
+                            ]
+                        },
+                        'layout': {
+                            'line-cap': 'square',
+                            //'visibility': 'none',
+                        },
+                    },
+/*                     {
+                        'id': 'point',
+                        'type': 'circle',
+                        'source': 'point',
+                        'paint': {
+                            'circle-radius': 6,
+                            'circle-color': '#f00'
+                        },
+                    } */
+                );
 
                 // setup the viewport
-                map.jumpTo({'center': coordinates[0], 'zoom': 17});
+                //map.jumpTo({'center': coordinates[0], 'zoom': 17});
+                map.jumpTo({'center': layer_data.features[0].geometry.coordinates[0], 'zoom': 17});
                 map.setPitch(0);
+                //console.log(layer_data.features[0].geometry.coordinates[0]);
 
-                // on a regular basis, add more coordinates from the saved list and update the map
+                //feature_allの要素をlayer_dataのfeatureに追加していく。
                 let i = 0;
                 const timer = window.setInterval(() => {
-                    if (i < coordinates.length) {
-                        data.features[0].geometry.coordinates.push(
+                    if (i < feature_all.length) {
+                        //layer_features = data.features.slice(0,i);
+                        //layer_data.features[0].geometry.coordinates.push([coordinates[i]])
+/*                         data.features[0].geometry.coordinates.push(
                             coordinates[i]
-                        );
-                        map.getSource('trace').setData(data);
-                        map.panTo(coordinates[i]);
+                        ); */
+                        layer_data.features.push(feature_all[i]);
+                        map.getSource('trace').setData(layer_data);
+                        map.panTo(layer_data.features[i].geometry.coordinates[0]);
                         i++;
                     } else {
                         window.clearInterval(timer);

@@ -76,6 +76,7 @@
         zoom: 15,
         center: [139.90050, 36.8059],
         hash: true,
+        //bearingSnap: -7,
         style: {
             version: 8,
             glyphs: './fonts/{fontstack}/{range}.pbf', //フォントデータ指定
@@ -110,7 +111,8 @@
                     ],
                     maxzoom: 15
                 },
-                map: {
+
+/*                 map: {
                     type: 'image',
                     url: './map.jpg',
                     coordinates: [
@@ -119,7 +121,7 @@
                         [139.8520458, 36.7557454],
                         [139.82969458, 36.75335628],
                     ],
-                },
+                }, */
             },
             layers: [
                 {
@@ -161,27 +163,54 @@
                         'text-font': ['Noto Sans Bold']
                     }
                 },
-                {
+/*                 {
                     id: 'map',
                     source: 'map',
                     type: 'raster',
                     paint: {
                         'raster-opacity': 0.7,
                     }
-                }
+                } */
             ]
         }
     }));
 
     const replayButton = document.getElementById('replay');
+    const mapimgCoord = [
+        [139.8276436, 36.7659966],
+        [139.8499857, 36.7683691],
+        [139.8520458, 36.7557454],
+        [139.82969458, 36.75335628],  
+    ]
 
 
     map.on('load', () => {
-        map.addSource('lines', {
-            'type': 'geojson',
-            'data': './oshimai-gpxsegment.geojson',
+
+        //ここで地図も足し、地図のbboxにフィットさせる。
+
+        map.addSource(
+            
+            'lines', {
+                type: 'geojson',
+                data: './oshimai-gpxsegment.geojson',
+            }
+        );
+        map.addSource( 
+            'mapimg', {
+                type: 'image',
+                url: './map.jpg',
+                coordinates: mapimgCoord,
+            }         
+        );
+
+        map.addLayer({
+            'id': 'mapimg',
+            'type': 'raster',
+            'source': 'mapimg',
+            'paint': {
+                'raster-opacity': 0.7,
+            }
         });
-        //map.getSource
         map.addLayer({
             'id': 'gpsLine',
             'type': 'line',
@@ -205,9 +234,13 @@
                 'line-cap': 'square',
                 //'visibility': 'none',
             },
-        });
+        }),
 
-            // ズーム・回転
+        //地図のbbに
+        map.fitBounds([mapimgCoord[3],mapimgCoord[1]]);
+
+
+        // ズーム・回転
         map.addControl(new maplibregl.NavigationControl());
 
         // スケール表示
@@ -222,6 +255,11 @@
                 exaggeration: 1 // 標高を強調する倍率
             })
         );
+        
+        //磁北に合わせる
+        //map.snapToNorth();
+        const bearing = -7
+        map.setBearing(bearing)
 
 /*     const speedFactor = 30; // number of frames per longitude degree
     let animation; // to store and cancel the animation
@@ -284,7 +322,7 @@
 
                     // setup the viewport
                     //map.jumpTo({'center': coordinates[0], 'zoom': 17});
-                    map.jumpTo({'center': layer_data.features[0].geometry.coordinates[0], 'zoom': 17});
+                    map.jumpTo({'center': layer_data.features[0].geometry.coordinates[0], 'zoom': 15});
                     map.setPitch(0);
                     //console.log(layer_data.features[0].geometry.coordinates[0]);
 
@@ -316,6 +354,7 @@
                 //map.setLayoutProperty('trace', 'visibility', 'none');
                 //map.jumpTo({'center':  [139.90050, 36.8059], 'zoom': 17});
                 map.setLayoutProperty('gpsLine', 'visibility', 'visible');
+                map.setBearing(bearing);
             };
 
         });

@@ -173,7 +173,7 @@
         }
     }));
 
-    const pauseButton = document.getElementById('pause');
+    const replayButton = document.getElementById('replay');
 
 
     map.on('load', () => {
@@ -183,7 +183,7 @@
         });
         //map.getSource
         map.addLayer({
-            'id': 'lines',
+            'id': 'gpsLine',
             'type': 'line',
             'source': 'lines',
             'paint': {
@@ -198,13 +198,30 @@
                     5, '#f79556',
                     10, '#fdfd57',
                     15, '#60b856'
-                ]
+                ],
+                'line-opacity': 0.8,
             },
             'layout': {
                 'line-cap': 'square',
-                'visibility': 'none',
+                //'visibility': 'none',
             },
         });
+
+            // ズーム・回転
+        map.addControl(new maplibregl.NavigationControl());
+
+        // スケール表示
+        map.addControl(new maplibregl.ScaleControl({
+            maxWidth: 200,
+            unit: 'metric'
+        }));
+        // 3D地形コントロール
+        map.addControl(
+            new maplibregl.TerrainControl({
+                source: 'hillshadeSource',
+                exaggeration: 1 // 標高を強調する倍率
+            })
+        );
 
 /*     const speedFactor = 30; // number of frames per longitude degree
     let animation; // to store and cancel the animation
@@ -214,97 +231,98 @@
     const pauseButton = document.getElementById('pause'); */
 
 
-        
+        let timer ;
 
-        d3.json(
-            './oshimai-gpxsegment.geojson',
-            (err, data) => {
-                if (err) throw err;
+        replayButton.addEventListener('click', () => {
+            if (replayButton.innerText === 'Replay') {
+                replayButton.innerText = 'Stop';
+                // Add logic for starting the replay action
 
-                const feature_all = data.features;
-                //console.log(feature_all)
+            map.setLayoutProperty('gpsLine', 'visibility', 'none');
 
-                //描画用Lineデータ生成
-                const layer_data = {
-                    //'name': data.name,
-                    'type': 'FeatureCollection',
-                    //'crs':  data.crs,
-                    'features':feature_all.slice(0,1),
-                };
-                //console.log(layer_data)
+            d3.json(
+                './oshimai-gpxsegment.geojson',
+                (err, data) => {
+                    if (err) throw err;
 
-                // start by showing just the first coordinate
-                //data.features[0].geometry.coordinates = [coordinates[0]];
-                
-                // add it to the map
-                map.addSource('trace', {type: 'geojson', data});
-                map.addLayer({
-                    'id': 'trace',
-                    'type': 'line',
-                    'source': 'trace',
-                    'paint': {
-                        'line-width': 5,
-                        // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
-                        // to set the line-color to a feature property value.
-                        'line-color': [
-                            'interpolate',
-                            ['linear'],
-                            ['get', '_speed'],
-                            0, '#d7191c',
-                            5, '#f79556',
-                            10, '#fdfd57',
-                            15, '#60b856'
-                        ]
-                    },
-                });
+                    const feature_all = data.features;
+                    //console.log(feature_all)
 
-                // setup the viewport
-                //map.jumpTo({'center': coordinates[0], 'zoom': 17});
-                map.jumpTo({'center': layer_data.features[0].geometry.coordinates[0], 'zoom': 17});
-                map.setPitch(0);
-                //console.log(layer_data.features[0].geometry.coordinates[0]);
+                    //描画用Lineデータ生成
+                    const layer_data = {
+                        //'name': data.name,
+                        'type': 'FeatureCollection',
+                        //'crs':  data.crs,
+                        'features':feature_all.slice(0,1),
+                    };
+                    //console.log(layer_data)
 
-                //feature_allの要素をlayer_dataのfeatureに追加していく。
-                let i = 0;
-                const timer = window.setInterval(() => {
-                    if (i < feature_all.length) {
-                        //layer_features = data.features.slice(0,i);
-                        //layer_data.features[0].geometry.coordinates.push([coordinates[i]])
-/*                         data.features[0].geometry.coordinates.push(
-                            coordinates[i]
-                        ); */
-                        layer_data.features.push(feature_all[i]);
-                        map.getSource('trace').setData(layer_data);
-                        map.panTo(layer_data.features[i].geometry.coordinates[0]);
-                        i++;
-                    } else {
-                        window.clearInterval(timer);
-                    }
-                }, 100);
-            }
-        );
+                    // start by showing just the first coordinate
+                    //data.features[0].geometry.coordinates = [coordinates[0]];
+                    
+                    // add it to the map
+                    map.addSource('trace', {type: 'geojson', data});
+                    map.addLayer({
+                        'id': 'trace',
+                        'type': 'line',
+                        'source': 'trace',
+                        'paint': {
+                            'line-width': 5,
+                            // Use a get expression (https://maplibre.org/maplibre-style-spec/expressions/#get)
+                            // to set the line-color to a feature property value.
+                            'line-color': [
+                                'interpolate',
+                                ['linear'],
+                                ['get', '_speed'],
+                                0, '#d7191c',
+                                5, '#f79556',
+                                10, '#fdfd57',
+                                15, '#60b856'
+                            ]
+                        },
+                    });
 
+                    // setup the viewport
+                    //map.jumpTo({'center': coordinates[0], 'zoom': 17});
+                    map.jumpTo({'center': layer_data.features[0].geometry.coordinates[0], 'zoom': 17});
+                    map.setPitch(0);
+                    //console.log(layer_data.features[0].geometry.coordinates[0]);
+
+                    //feature_allの要素をlayer_dataのfeatureに追加していく。
+                    let i = 0;
+                    timer = window.setInterval(() => {
+                        if (i < feature_all.length) {
+                            //layer_features = data.features.slice(0,i);
+                            //layer_data.features[0].geometry.coordinates.push([coordinates[i]])
+    /*                         data.features[0].geometry.coordinates.push(
+                                coordinates[i]
+                            ); */
+                            layer_data.features.push(feature_all[i]);
+                            map.getSource('trace').setData(layer_data);
+                            map.panTo(layer_data.features[i].geometry.coordinates[0]);
+                            i++;
+                        } else {
+                            window.clearInterval(timer);
+                        }
+                    }, 100);
+                }
+            );
+        } else {
+                replayButton.innerText = 'Replay';
+                // Add logic for stopping the replay action
+                window.clearInterval(timer);
+                map.removeLayer('trace');
+                map.removeSource('trace');
+                //map.setLayoutProperty('trace', 'visibility', 'none');
+                //map.jumpTo({'center':  [139.90050, 36.8059], 'zoom': 17});
+                map.setLayoutProperty('gpsLine', 'visibility', 'visible');
+            };
+
+        });
     });
 
 
-    // ズーム・回転
-    map.addControl(new maplibregl.NavigationControl());
 
-/*     // フルスクリーンモードのオンオフ
-    map.addControl(new maplibregl.FullscreenControl()); */
-
-    // スケール表示
-    map.addControl(new maplibregl.ScaleControl({
-        maxWidth: 200,
-        unit: 'metric'
-    }));
-    // 3D地形コントロール
-    map.addControl(
-        new maplibregl.TerrainControl({
-            source: 'hillshadeSource',
-            exaggeration: 1 // 標高を強調する倍率
-        })
-    );
 </script>
 </body>
 </html>

@@ -241,15 +241,16 @@
 
         //https://maplibre.org/maplibre-gl-js/docs/examples/zoomto-linestring/
         //うまく働いていない？
-        document
+/*         document
+        const coordinate = mapimgCoord.features[0].geometry.coordinates;
         let bounds = mapimgCoord.reduce((bounds, coord) => {
                     return bounds.extend(coord);
                 }, new maplibregl.LngLatBounds(mapimgCoord[0], mapimgCoord[0]));
 
                 map.fitBounds(bounds, {
                     padding: 20
-                });
-         
+                }); */
+       
 
 
 
@@ -334,6 +335,9 @@
                         },
                     });
 
+                    //maker作る
+                    const marker = new maplibregl.Marker();
+
                     // setup the viewport
                     //map.jumpTo({'center': coordinates[0], 'zoom': 17});
                     map.jumpTo({'center': layer_data.features[0].geometry.coordinates[0], 'zoom': 15});
@@ -344,14 +348,14 @@
                     let i = 0;
                     timer = window.setInterval(() => {
                         if (i < feature_all.length) {
-                            //layer_features = data.features.slice(0,i);
-                            //layer_data.features[0].geometry.coordinates.push([coordinates[i]])
-    /*                         data.features[0].geometry.coordinates.push(
-                                coordinates[i]
-                            ); */
                             layer_data.features.push(feature_all[i]);
                             map.getSource('trace').setData(layer_data);
-                            map.panTo(layer_data.features[i].geometry.coordinates[0]);
+                            const head = layer_data.features[i].geometry.coordinates[1];
+                            map.panTo(head);
+                            console.log(head);
+                            //maker表示
+                            marker.setLngLat(head);
+                            marker.addTo(map);
                             i++;
                         } else {
                             window.clearInterval(timer);
@@ -368,9 +372,9 @@
                 //map.setLayoutProperty('trace', 'visibility', 'none');
                 //map.jumpTo({'center':  [139.90050, 36.8059], 'zoom': 17});
                 map.setLayoutProperty('gpsLine', 'visibility', 'visible');
-                map.fitBounds(bounds, {
+/*                 map.fitBounds(bounds, {
                     padding: 20
-                });
+                }); */
                 map.setBearing(bearing);
                 //map.setPitch(60);
 
